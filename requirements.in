@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy[asyncio]
+asyncpg
+alembic
+structlog
+aioredis
+python-jose[cryptography]
+passlib[bcrypt]
+
+# dev
+pytest
+pytest-asyncio
+pip-tools
+devtools
+pre-commit
