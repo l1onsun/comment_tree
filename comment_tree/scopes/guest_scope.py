@@ -21,7 +21,7 @@ class GuestScope:
     storage: Storage
 
     async def register_user(
-        self, login: str, password: str, fullname: str | None
+        self, login: str, password: str, fullname: str
     ) -> UserScope:
         raise_exception_if_login_not_allowed(login)
         await self.storage.insert_user(login, password, fullname)

@@ -33,4 +33,4 @@ class DbComment(DbModel):
     content: str
     timestamp: datetime
     post_id: int
-    reply_to_comment_id: int
+    reply_to_comment_id: int | None

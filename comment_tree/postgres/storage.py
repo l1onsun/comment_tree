@@ -51,11 +51,11 @@ class Storage:
         )
 
     @engine_execute
-    async def insert_comment(
+    def insert_comment(
         self,
         user_login: str,
         post_id: int,
-        reply_to_comment_id: int,
+        reply_to_comment_id: int | None,
         content: str,
     ):
         return sa.insert(comment_table).values(
@@ -67,26 +67,43 @@ class Storage:
         )
 
     @engine_execute
-    async def delete_post(self, post_id: int):
-        return sa.delete(post_table).where(post_table.c.id == post_id)
+    async def delete_post(self, post_id: int, user_login: str):
+        return sa.delete(post_table).where(
+            sa.and_(post_table.c.user_login == user_login, post_table.c.id == post_id)
+        )
 
     @engine_execute
-    async def delete_comment(self, comment_id: int):
-        return sa.delete(comment_table).where(comment_table.c.id == comment_id)
+    async def delete_comment(self, comment_id: int, user_login: str):
+        return sa.delete(comment_table).where(
+            sa.and_(
+                comment_table.c.user_login == user_login,
+                comment_table.c.id == comment_id,
+            )
+        )
 
     @engine_execute
-    async def update_post(self, post_id: int, content: str):
+    async def update_post(self, post_id: int, content: str, user_login: str):
         return (
             sa.update(post_table)
-            .where(post_table.c.id == post_id)
+            .where(
+                sa.and_(
+                    post_table.c.user_login == user_login,
+                    post_table.c.id == post_id,
+                )
+            )
             .values(content=content)
         )
 
     @engine_execute
-    def update_comment(self, comment_id: int, content: str):
+    def update_comment(self, comment_id: int, content: str, user_login: str):
         return (
             sa.update(comment_table)
-            .where(comment_table.c.id == comment_id)
+            .where(
+                sa.and_(
+                    comment_table.c.user_login == user_login,
+                    comment_table.c.id == comment_id,
+                )
+            )
             .values(content=content)
         )
 
@@ -99,7 +116,7 @@ class Storage:
                             user_table.c.login == login
                         )
                     )
-                ).fetchone()
+                ).one()
             )
 
     async def select_recent_posts(self) -> list[DbPost]:
@@ -110,7 +127,7 @@ class Storage:
                     await conn.execute(
                         sa.select(post_table).order_by(sa.desc("timestamp"))
                     )
-                ).fetch(RECENT_POSTS_COUNT)
+                ).fetchmany(RECENT_POSTS_COUNT)
             ]
 
     async def select_comments_by_post_ids(self, post_ids: list[int]) -> list[DbComment]:
@@ -128,16 +145,16 @@ class Storage:
 
     async def select_user_posts(self, user_login):
         async with self.engine.begin() as conn:
-            return {
-                row.id: DbPost.from_orm(row)
+            return [
+                DbPost.from_orm(row)
                 for row in (
                     await conn.execute(
                         sa.select(post_table)
                         .where(post_table.c.user_login == user_login)
                         .order_by(sa.desc("timestamp"))
                     )
-                ).fetch(RECENT_POSTS_COUNT)
-            }
+                ).fetchall()
+            ]
 
     async def create_all(self):
         async with self.engine.begin() as conn:

@@ -19,7 +19,7 @@ class UserScope:
         await self.storage.insert_post(user_login=self.user_login, content=content)
 
     def create_jwt_access_token(self):
-        self.authorizer.create_jwt_access_token(self.user_login)
+        return self.authorizer.create_jwt_access_token(self.user_login)
 
 
 @dataclass

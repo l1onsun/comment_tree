@@ -1,9 +1,9 @@
-include .env
+-include .env
 export
 
-docker-all-tests:
-	docker-compose -f docker-compose.yml build
-	docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm app
+test-docker:
+	docker compose -f docker-compose.test.yml build
+	docker compose -f docker-compose.test.yml run --rm app
 
 test-unit:
 	pytest -m unit
@@ -31,3 +31,7 @@ sync:
 
 run:
 	uvicorn comments_tree.asgi:app
+
+stop-test-postgres:
+	docker compose stop postgres_test
+
