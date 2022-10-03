@@ -4,18 +4,4 @@ services:
 
   app:
     restart: "no"
-    build:
-      context: .
-    environment:
-      TEST_POSTGRES_URI:
-        postgresql+asyncpg://test_pg_user:test_pg_password@postgres_test:5432/comment_tree_test
-    depends_on:
-      - postgres_test
     command: [ "pytest" ]
-
-  postgres_test:
-    image: "postgres:14"
-    environment:
-      POSTGRES_USER: test_pg_user
-      POSTGRES_PASSWORD: test_pg_password
-      POSTGRES_DB: comment_tree_test

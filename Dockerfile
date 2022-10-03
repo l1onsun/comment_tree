@@ -22,6 +22,8 @@ COPY --from=builder ${BUILDER_INSTALL_PREFIX} /usr/local
 
 COPY comment_tree ./comment_tree
 COPY tests ./tests
+COPY alembic ./alembic
+COPY alembic.ini .
 
 CMD ["uvicorn", "comment_tree.asgi:app", "--host", "0.0.0.0", "--port", "8443"]
 

@@ -1,0 +1,10 @@
+---
+version: '3.7'
+services:
+
+  app:
+    restart: "no"
+    command: sh -c "alembic upgrade head && alembic revision --autogenerate -m 'First revision'"
+    volumes:
+      - ./alembic/:/code/alembic
+      - ./alembic.ini/:/code/alembic.ini

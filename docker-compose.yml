@@ -6,5 +6,21 @@ services:
     restart: unless-stopped
     build:
       context: .
+    environment:
+      POSTGRES_URI:
+        postgresql+asyncpg://test_pg_user:test_pg_password@postgres_test:5432/comment_tree_test
+      TEST_POSTGRES_URI:
+        postgresql+asyncpg://test_pg_user:test_pg_password@postgres_test:5432/comment_tree_test
+      JWT_SECRET_KEY:
+        test_jwt_key
+    depends_on:
+      - postgres_test
     ports:
       - 8443:8443
+
+  postgres_test:
+    image: "postgres:14"
+    environment:
+      POSTGRES_USER: test_pg_user
+      POSTGRES_PASSWORD: test_pg_password
+      POSTGRES_DB: comment_tree_test
