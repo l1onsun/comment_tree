@@ -1,12 +1,10 @@
 import re
 from dataclasses import dataclass, field
 
-from comment_tree.api.guest_routes.view import PostView
-from comment_tree.authorization.authorizer import Authorizer
 from comment_tree.exceptions import BaseApiException
 from comment_tree.postgres.db_models import DbComment, DbPost
 from comment_tree.postgres.storage import Storage
-from comment_tree.response_models import CommentView
+from comment_tree.response_models import CommentView, PostView
 from comment_tree.scopes.user_scope import UserScope
 
 allowed_login_pattern = re.compile(r"^\w+$")
@@ -19,17 +17,20 @@ def raise_exception_if_login_not_allowed(login: str):
 
 @dataclass
 class GuestScope:
-    authorizer: Authorizer
+    authorizer: "authorizer.Authorizer"  # type: ignore[name-defined]  # ToDo
     storage: Storage
 
-    async def register_user(self, login: str, password: str, fullname: str | None):
+    async def register_user(
+        self, login: str, password: str, fullname: str | None
+    ) -> UserScope:
         raise_exception_if_login_not_allowed(login)
         await self.storage.insert_user(login, password, fullname)
+        return await self.login_with_password(login, password)
 
-    async def login_with_password(self, login: str, password: str):
-        return self.authorizer.login_with_password(login, password)
+    async def login_with_password(self, login: str, password: str) -> UserScope:
+        return await self.authorizer.login_with_password(login, password)
 
-    async def login_with_jwt_token(self, jwt_access_token: str) -> UserScope:
+    def login_with_jwt_token(self, jwt_access_token: str) -> UserScope:
         return self.authorizer.login_with_jwt_token(jwt_access_token)
 
     async def user_posts_by_login(self, user_login: str) -> list[PostView]:
@@ -42,7 +43,7 @@ class GuestScope:
 
     async def _load_and_attach_comments(self, posts: "PostsHelper") -> list[PostView]:
         comments = await self._load_comments_under_posts(posts)
-        return self._attach(posts, comments)
+        return posts.attach_comments(comments)
 
     async def _load_comments_under_posts(
         self, posts: "PostsHelper"
@@ -50,29 +51,6 @@ class GuestScope:
         return CommentsHelper(
             await self.storage.select_comments_by_post_ids(posts.ids())
         )
-
-    def _attach(
-        self, posts: "PostsHelper", comments: "CommentsHelper"
-    ) -> list[PostView]:
-        for comment in comments.db_comments:
-            posts.post_views[comment.post_id].childs.append(
-                comments.comment_views[comment.id]
-            )
-        return list(posts.post_views.values())
-
-
-@dataclass
-class PostsHelper:
-    db_posts: list[DbPost]
-    post_views: dict[int, PostView] = field(init=False)
-
-    def __post_init__(self):
-        self.post_views = {
-            post.id: PostView(childs=[], **post.dict()) for post in self.db_posts
-        }
-
-    def ids(self) -> list[int]:
-        return list(self.post_views.keys())
 
 
 @dataclass
@@ -93,3 +71,24 @@ class CommentsHelper:
                 self.comment_views[comment.reply_to_comment_id].childs.append(
                     self.comment_views[comment.id]
                 )
+
+
+@dataclass
+class PostsHelper:
+    db_posts: list[DbPost]
+    post_views: dict[int, PostView] = field(init=False)
+
+    def __post_init__(self):
+        self.post_views = {
+            post.id: PostView(childs=[], **post.dict()) for post in self.db_posts
+        }
+
+    def ids(self) -> list[int]:
+        return list(self.post_views.keys())
+
+    def attach_comments(self, comments: CommentsHelper) -> list[PostView]:
+        for comment in comments.db_comments:
+            self.post_views[comment.post_id].childs.append(
+                comments.comment_views[comment.id]
+            )
+        return list(self.post_views.values())

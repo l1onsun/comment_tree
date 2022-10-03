@@ -6,6 +6,7 @@ from pydantic import BaseModel, ValidationError
 
 from comment_tree.exceptions import BaseApiException
 from comment_tree.postgres.storage import Storage
+from comment_tree.scopes.guest_scope import GuestScope
 from comment_tree.scopes.user_scope import UserScope
 
 ALGORITHM = "HS256"
@@ -25,15 +26,18 @@ class Authorizer:
     storage: Storage
     jwt_secret_key: str
 
-    async def login_with_password(self, login: str, password: str):
+    def create_guest_scope(self) -> GuestScope:
+        return GuestScope(self, self.storage)
+
+    async def login_with_password(self, login: str, password: str) -> UserScope:
         db_user = await self.storage.select_user_by_login(login)
         db_user.verify_password(password)
-        return UserScope(db_user.user_login, self, self.storage)
+        return self._user_scope(db_user.user_login)
 
     def login_with_jwt_token(self, jwt_access_token: str) -> UserScope:
         access_token = self._decode_access_token(jwt_access_token)
         access_token.raise_exception_if_expired()
-        return UserScope(access_token.user_login, self, self.storage)
+        return self._user_scope(access_token.user_login)
 
     def create_jwt_access_token(self, user_login: str):
         return jwt.encode(
@@ -53,3 +57,6 @@ class Authorizer:
             )
         except JWTError | ValidationError:
             raise BaseApiException("Incorrect jwt-token")
+
+    def _user_scope(self, user_login: str) -> UserScope:
+        return UserScope(user_login, self, self.storage)

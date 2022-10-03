@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 
-from comment_tree.authorization.authorizer import Authorizer
 from comment_tree.postgres.storage import Storage
 
 
 @dataclass
 class UserScope:
     user_login: str
-    authorizer: Authorizer
+    authorizer: "authorizer.Authorizer"  # type: ignore[name-defined]  # ToDo
     storage: Storage
 
     def post(self, post_id: int) -> "PostHandle":

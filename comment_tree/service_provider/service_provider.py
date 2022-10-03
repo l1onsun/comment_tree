@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass, field
 from typing import Container, Type
 
@@ -21,19 +22,23 @@ class ServiceProvider:
         except KeyError:
             raise RuntimeError(f"Service {service_class} not found")
 
-    def solve(self, service_class: Type[TService]) -> TService:
+    async def solve(self, service_class: Type[TService]) -> TService:
         try:
             service: Service = self._get_service(service_class)
         except KeyError:
-            service = self._build(service_class)
+            service = await self._build(service_class)
         return service
+
+    def solve_sync(self, service_class: Type[TService]) -> TService:
+        # ToDo: Not use asyncio here
+        return asyncio.run(self.solve(service_class))
 
     def solvable(self) -> Container[ServiceClass]:
         return self.factories.keys() | self.services.keys()
 
-    def solve_all(self):
+    async def solve_all(self):
         for service_class in self.factories:
-            self.solve(service_class)
+            await self.solve(service_class)
 
     def _get_service(self, service_class: Type[Service]) -> Service:
         service = self.services[service_class]
@@ -43,10 +48,10 @@ class ServiceProvider:
             )
         return service
 
-    def _build(self, service_class: Type[Service]) -> Service:
+    async def _build(self, service_class: Type[Service]) -> Service:
         self.services[service_class] = _service_locked_sentinel
-        service: Service = self.factories.get_factory(
-            service_class
+        service: Service = await (
+            self.factories.get_factory(service_class)
         ).build_with_provider(self)
         self.services[service_class] = service
         return service

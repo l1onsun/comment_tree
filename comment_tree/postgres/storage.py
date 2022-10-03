@@ -8,14 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from comment_tree.authorization.password_hash import hash_password
 from comment_tree.postgres.db_models import DbComment, DbPost, DbUserPassword
-from comment_tree.postgres.tables import comment_table, post_table, user_table
+from comment_tree.postgres.tables import comment_table, metadata, post_table, user_table
 
 RECENT_POSTS_COUNT = 10
 
 
 def engine_execute(storage_method: Callable):
-    @functools.wraps
-    async def wrapped(self: Storage, *args, **kwargs):
+    @functools.wraps(storage_method)
+    async def wrapped(self: "Storage", *args, **kwargs):
         await self._engine_execute(storage_method(self, *args, **kwargs))
 
     return wrapped
@@ -95,9 +95,9 @@ class Storage:
             return DbUserPassword.from_orm(
                 (
                     await conn.execute(
-                        sa.select(
-                            user_table.c.user_login, user_table.c.password_hash
-                        ).where(user_table.c.login == login)
+                        sa.select(user_table.c.login, user_table.c.password_hash).where(
+                            user_table.c.login == login
+                        )
                     )
                 ).fetchone()
             )
@@ -138,3 +138,7 @@ class Storage:
                     )
                 ).fetch(RECENT_POSTS_COUNT)
             }
+
+    async def create_all(self):
+        async with self.engine.begin() as conn:
+            await conn.run_sync(metadata.create_all)

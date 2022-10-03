@@ -1,8 +1,15 @@
 include .env
 export
 
-test:
-	python -m pytest tests
+docker-all-tests:
+	docker-compose -f docker-compose.yml build
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm app
+
+test-unit:
+	pytest -m unit
+
+test-all:
+	pytest
 
 check:
 	pre-commit run -a
@@ -23,4 +30,4 @@ sync:
 
 
 run:
-	uvicorn happy_predictions.asgi:app
+	uvicorn comments_tree.asgi:app
