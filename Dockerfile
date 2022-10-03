@@ -25,8 +25,7 @@ COPY tests ./tests
 COPY alembic ./alembic
 COPY alembic.ini .
 
-CMD ["uvicorn", "comment_tree.asgi:app", "--host", "0.0.0.0", "--port", "8443"]
+CMD ["uvicorn", "--factory", "comment_tree.asgi:app_factory",\
+     "--host", "0.0.0.0", "--port", "8443"]
 
 # ToDo: split core and test dependencies, add testing layers
-#FROM app as app-dev
-#COPY requirements-dev.txt ./

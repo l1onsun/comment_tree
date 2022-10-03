@@ -30,7 +30,7 @@ sync:
 
 
 run:
-	uvicorn comments_tree.asgi:app
+	uvicorn --factory comments_tree.asgi:app_factory
 
 run-docker:
 	docker compose -f docker-compose.yml up

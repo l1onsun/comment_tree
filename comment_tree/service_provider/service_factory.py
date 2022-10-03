@@ -7,7 +7,10 @@ from comment_tree.service_provider.types import BuilderFunc, Service, ServiceCla
 
 
 class _ServiceProvider(Protocol):
-    def solve(self, service_class: Type[Service]) -> Service:
+    async def solve(self, service_class: Type[Service]) -> Service:
+        ...
+
+    async def solve_sync(self, service_class: Type[Service]) -> Service:
         ...
 
 
@@ -40,11 +43,27 @@ class ServiceFactory:
         ]
         return await self.build_with_dependencies(solved_dependencies)
 
+    def build_with_provider_sync(self, service_provider: _ServiceProvider) -> Service:
+        solved_dependencies: list[Service] = [
+            service_provider.solve_sync(service_class)
+            for service_class in self.dependencies
+        ]
+        return self.build_with_dependencies_sync(solved_dependencies)
+
     async def build_with_dependencies(
         self, solved_dependencies: list[Service]
     ) -> Service:
         result = self.build_function(*solved_dependencies)
         return await result if self.is_async else result
+
+    async def build_with_dependencies_sync(
+        self, solved_dependencies: list[Service]
+    ) -> Service:
+        if self.is_async:
+            raise RuntimeError(
+                f"Can't build async factory {self.build_function.__name__}"
+            )
+        return self.build_function(*solved_dependencies)
 
 
 def _get_signature_if_annotated_else_raise(

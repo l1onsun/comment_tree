@@ -4,4 +4,4 @@ services:
 
   app:
     restart: "no"
-    command: [ "pytest", "-vv" ]
+    command: [ "pytest" ]

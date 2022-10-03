@@ -1,4 +1,3 @@
-import asyncio
 from dataclasses import dataclass, field
 from typing import Container, Type
 
@@ -30,8 +29,12 @@ class ServiceProvider:
         return service
 
     def solve_sync(self, service_class: Type[TService]) -> TService:
-        # ToDo: Not use asyncio here
-        return asyncio.run(self.solve(service_class))
+        # ToDo: fix DRY between sync and async functions
+        try:
+            service: Service = self._get_service(service_class)
+        except KeyError:
+            service = self._build_sync(service_class)
+        return service
 
     def solvable(self) -> Container[ServiceClass]:
         return self.factories.keys() | self.services.keys()
@@ -53,5 +56,13 @@ class ServiceProvider:
         service: Service = await (
             self.factories.get_factory(service_class)
         ).build_with_provider(self)
+        self.services[service_class] = service
+        return service
+
+    def _build_sync(self, service_class: Type[Service]) -> Service:
+        self.services[service_class] = _service_locked_sentinel
+        service: Service = (
+            self.factories.get_factory(service_class)
+        ).build_with_provider_sync(self)
         self.services[service_class] = service
         return service
