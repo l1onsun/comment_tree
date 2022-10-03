@@ -56,7 +56,7 @@ class ServiceFactory:
         result = self.build_function(*solved_dependencies)
         return await result if self.is_async else result
 
-    async def build_with_dependencies_sync(
+    def build_with_dependencies_sync(
         self, solved_dependencies: list[Service]
     ) -> Service:
         if self.is_async:

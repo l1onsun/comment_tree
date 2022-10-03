@@ -1,8 +1,7 @@
 -include .env
 export
 
-test-docker:
-	docker compose -f docker-compose.yml build
+test-docker: docker-build
 	docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm app
 
 test-unit:
@@ -32,14 +31,14 @@ sync:
 run:
 	uvicorn --factory comments_tree.asgi:app_factory
 
-run-docker:
+run-docker: docker-build
 	docker compose -f docker-compose.yml up
 
 stop-test-postgres:
 	docker compose stop postgres_test
 
 alembic-autogenerate-revision:
-	docker compose -f docker-compose.yml build
 	docker compose -f docker-compose.yml -f docker-compose.migration.yml run --rm app
 
-
+docker-build:
+	docker compose -f docker-compose.yml build

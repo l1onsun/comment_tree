@@ -52,3 +52,9 @@ async def test_provider_solve_all():
         ServiceC,
     }
     assert provider.provide(ServiceC).a.some_str == "some_str"
+
+
+def test_provider_solve_sync():
+    provider = ServiceProvider(factories)
+    service_a = provider.solve_sync(ServiceA)
+    assert service_a.some_str == "some_str"
