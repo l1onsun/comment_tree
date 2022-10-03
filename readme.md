@@ -1,4 +1,5 @@
 Тестовое задание (ТЗ: [terms_of_reference](terms_of_reference.md))
+пример работы в тестах: [test_two_users_flow](tests/test_app/test_api/test_integration.py)
 
 ## Using with docker
 ### Run all tests in docker-compose
