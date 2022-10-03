@@ -13,7 +13,7 @@ LOGGED_IN_USER_PASSWORD = "logged_in_user_password"
 
 
 @pytest_asyncio.fixture
-async def app_client(app: FastAPI) -> httpx.AsyncClient:
+async def guest_client(app: FastAPI) -> httpx.AsyncClient:
     async with httpx.AsyncClient(app=app, base_url="http://app_test") as client:
         yield client
 

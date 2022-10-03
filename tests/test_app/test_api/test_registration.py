@@ -10,11 +10,11 @@ from tests.test_app.test_api.conftest import auth_headers
 
 @pytest.mark.asyncio
 @pytest.mark.provider_override({Storage: AsyncMock(), CreateTablesFlag: None})
-async def test_registration(app_client, storage):
+async def test_registration(guest_client: httpx.AsyncClient, storage: AsyncMock):
     storage.select_user_by_login.return_value = (db_user := Mock())
     db_user.user_login = (login := "my_login")
 
-    registration_response: httpx.Response = await app_client.post(
+    registration_response = await guest_client.post(
         "/register", json={"login": login, "password": "my_password"}
     )
     response_json = registration_response.json()
@@ -26,9 +26,7 @@ async def test_registration(app_client, storage):
         "token_type": "bearer",
     }
 
-    me_response: httpx.Response = await app_client.get(
-        "/me", headers=auth_headers(token)
-    )
+    me_response = await guest_client.get("/me", headers=auth_headers(token))
     assert me_response.json() == {
         "status": "success",
         "result": login,

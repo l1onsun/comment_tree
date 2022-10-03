@@ -6,19 +6,21 @@ from tests.test_app.test_api.conftest import AuthedUserFactoryType
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_two_users_flow(authed_user_factory: AuthedUserFactoryType):
+async def test_two_users_flow(
+    authed_user_factory: AuthedUserFactoryType, guest_client: httpx.AsyncClient
+):
     async with (
-        authed_user_factory("user_one") as user_one_client,
-        authed_user_factory("user_two") as user_two_client,
+        authed_user_factory("user_one") as user_one,
+        authed_user_factory("user_two") as user_two,
     ):
-        await user_one_client.post("/new_post", json={"content": "hi all!"})
-        await user_two_client.post(
+        await user_one.post("/new_post", json={"content": "hi all!"})
+        await user_two.post(
             "/new_comment", json={"content": "hi user_one!", "post_id": 1}
         )
-        await user_two_client.post(
+        await user_two.post(
             "/new_comment", json={"content": "how are you?", "post_id": 1}
         )
-        await user_one_client.post(
+        await user_one.post(
             "/new_comment",
             json={
                 "content": "i am fine, thanks!",
@@ -26,11 +28,10 @@ async def test_two_users_flow(authed_user_factory: AuthedUserFactoryType):
                 "reply_to_comment_id": 2,
             },
         )
-        user_one_posts_resp: httpx.Response = await user_two_client.get(
-            "/user_one/posts"
-        )
-    response_json = user_one_posts_resp.json()
-    assert user_one_posts_resp.status_code == 200
+
+    response = await guest_client.get("/user_one/posts")
+    response_json = response.json()
+    assert response.status_code == 200
     assert response_json == {
         "status": "success",
         "error_message": None,
