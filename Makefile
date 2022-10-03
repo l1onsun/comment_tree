@@ -38,7 +38,7 @@ run-docker:
 stop-test-postgres:
 	docker compose stop postgres_test
 
-alembic-revision:
+alembic-autogenerate-revision:
 	docker compose -f docker-compose.yml build
 	docker compose -f docker-compose.yml -f docker-compose.migration.yml run --rm app
 

@@ -15,9 +15,11 @@ post_table = Table(
     "post",
     metadata,
     Column("id", Integer, primary_key=True, nullable=False),
-    Column("user_login", None, ForeignKey(user_table.c.login), nullable=False),
+    Column(
+        "user_login", None, ForeignKey(user_table.c.login), index=True, nullable=False
+    ),
     Column("content", String, nullable=False),
-    Column("timestamp", TIMESTAMP(timezone=True), nullable=False),
+    Column("timestamp", TIMESTAMP(timezone=True), index=True, nullable=False),
 )
 
 comment_table = Table(
@@ -25,7 +27,7 @@ comment_table = Table(
     metadata,
     Column("id", Integer, primary_key=True, nullable=False),
     Column("user_login", None, ForeignKey(user_table.c.login), nullable=False),
-    Column("post_id", None, ForeignKey(post_table.c.id), nullable=False),
+    Column("post_id", None, ForeignKey(post_table.c.id), index=True, nullable=False),
     Column("reply_to_comment_id", None, ForeignKey("comment.id"), nullable=True),
     Column("content", String, nullable=False),
     Column("timestamp", TIMESTAMP(timezone=True), nullable=False),
