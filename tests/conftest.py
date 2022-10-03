@@ -2,6 +2,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test to run only in integration environment"
     )
+    config.addinivalue_line(
+        "markers", "provider_override: mark test to override dependencies"
+    )
 
 
 def pytest_collection_modifyitems(items, config):

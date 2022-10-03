@@ -10,7 +10,11 @@ router = APIRouter()
 @router.post("/new_comment", response_model=Result)
 async def new_comment(
     reply_to_comment_id: int
-    | None = Body(embed=True, title="The id of the comment to attach the new comment"),
+    | None = Body(
+        default=None,
+        embed=True,
+        title="The id of the comment to attach the new comment",
+    ),
     post_id: int = Body(
         embed=True, title="The id of the post to which the comment will be attached"
     ),

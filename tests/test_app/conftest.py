@@ -46,11 +46,11 @@ def service_provider(app: FastAPI) -> ServiceProvider:
     return app_get_service_provider(app)
 
 
-@pytest_asyncio.fixture
-async def storage(service_provider: ServiceProvider) -> Storage:
+@pytest.fixture
+def storage(service_provider: ServiceProvider) -> Storage:
     return service_provider.provide(Storage)
 
 
 @pytest.fixture
-async def authorizer(service_provider: ServiceProvider) -> Authorizer:
+def authorizer(service_provider: ServiceProvider) -> Authorizer:
     return service_provider.provide(Authorizer)

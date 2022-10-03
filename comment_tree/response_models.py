@@ -31,13 +31,13 @@ class Result(BaseModel, Generic[TResult]):
 
 class CommentView(BaseModel):
     id: int
-    user_login: int
+    user_login: str
     content: str
     childs: list["CommentView"]
 
 
 class PostView(BaseModel):
     id: int
-    user_login: int
+    user_login: str
     content: str
     childs: list[CommentView]

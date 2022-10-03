@@ -88,7 +88,8 @@ class PostsHelper:
 
     def attach_comments(self, comments: CommentsHelper) -> list[PostView]:
         for comment in comments.db_comments:
-            self.post_views[comment.post_id].childs.append(
-                comments.comment_views[comment.id]
-            )
+            if comment.reply_to_comment_id is None:
+                self.post_views[comment.post_id].childs.append(
+                    comments.comment_views[comment.id]
+                )
         return list(self.post_views.values())
