@@ -1,7 +1,5 @@
-import functools
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -11,14 +9,6 @@ from comment_tree.postgres.sql import comments_sql, posts_sql, users_sql
 from comment_tree.postgres.tables import metadata
 
 RECENT_POSTS_COUNT = 10
-
-
-def engine_execute(storage_method: Callable):
-    @functools.wraps(storage_method)
-    async def wrapped(self: "Storage", *args, **kwargs):
-        await self._execute(storage_method(self, *args, **kwargs))
-
-    return wrapped
 
 
 @dataclass

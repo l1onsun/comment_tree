@@ -42,7 +42,7 @@ class Authorizer:
         return self._create_user_scope(db_user.user_login)
 
     def login_with_jwt_token(self, jwt_access_token: str) -> UserScope:
-        access_token = self._decode_access_token(jwt_access_token)
+        access_token = self._try_decode_access_token(jwt_access_token)
         access_token.raise_exception_if_expired()
         return self._create_user_scope(access_token.user_login)
 
@@ -53,15 +53,16 @@ class Authorizer:
             algorithm=ALGORITHM,
         )
 
-    def _decode_access_token(self, jwt_access_token: str) -> AccessToken:
+    def _try_decode_access_token(self, jwt_access_token: str) -> AccessToken:
         try:
-            return AccessToken(
-                **jwt.decode(
-                    jwt_access_token, self.jwt_secret_key, algorithms=ALGORITHM
-                )
-            )
+            return self._decode_access_token(jwt_access_token)
         except JWTError | ValidationError:
             raise BaseApiException("Incorrect jwt-token")
+
+    def _decode_access_token(self, jwt_access_token: str) -> AccessToken:
+        return AccessToken(
+            **jwt.decode(jwt_access_token, self.jwt_secret_key, algorithms=ALGORITHM)
+        )
 
     def _create_user_scope(self, user_login: str) -> UserScope:
         return UserScope(user_login, self, self.storage)
