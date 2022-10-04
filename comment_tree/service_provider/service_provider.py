@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Container, Type
+from typing import Type
 
 from comment_tree.service_provider.service_factory import ServiceFactories
 from comment_tree.service_provider.sync_or_async_chain import SyncOrAsyncChain
@@ -46,26 +46,11 @@ class ServiceProvider:
             chain = self._build_to_chain(service_class)
         return chain
 
-    def solvable(self) -> Container[ServiceClass]:
-        return self.factories.keys() | self.services.keys()
-
-    def _get_service(self, service_class: Type[Service]) -> Service:
-        service = self.services[service_class]
-        if service is _service_locked_sentinel:
-            raise RuntimeError(
-                f"Service {service_class} is locked (probably cyclic dependencies)"
-            )
-        return service
-
-    def _set_service(self, service_class: ServiceClass, service: Service) -> Service:
-        self.services[service_class] = service
-        return service
-
     def _build_to_chain(
         self, service_class: Type[Service]
     ) -> SyncOrAsyncChain[Service]:
         self.services[service_class] = _service_locked_sentinel
-        service_chain: SyncOrAsyncChain[Service] = (
+        return (
             self.factories.get_factory(service_class)
             .build_to_chain(self)
             .append_callable(
@@ -73,4 +58,18 @@ class ServiceProvider:
                 callable_is_async=False,
             )
         )
-        return service_chain
+
+    def _set_service(self, service_class: ServiceClass, service: Service) -> Service:
+        self.services[service_class] = service
+        return service
+
+    def _get_service(self, service_class: Type[Service]) -> Service:
+        service = self.services[service_class]
+        self._check_not_locked(service_class, service)
+        return service
+
+    def _check_not_locked(self, service_class: ServiceClass, service: Service):
+        if service is _service_locked_sentinel:
+            raise RuntimeError(
+                f"Service {service_class} is locked (probably cyclic dependencies)"
+            )

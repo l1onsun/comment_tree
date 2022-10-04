@@ -22,7 +22,7 @@ async def edit_post(
     new_content: str = Body(embed=True, title="New post content"),
     user: UserScope = Depends(authorize_user),
 ):
-    await user.post(post_id).edit(new_content)
+    await user.post_handle(post_id).edit(new_content)
     return Result.success()
 
 
@@ -31,5 +31,5 @@ async def delete_post(
     post_id: int = Body(embed=True, title="The id of the post to delete"),
     user: UserScope = Depends(authorize_user),
 ):
-    await user.post(post_id).delete()
+    await user.post_handle(post_id).delete()
     return Result.success()

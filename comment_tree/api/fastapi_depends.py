@@ -1,8 +1,7 @@
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from comment_tree.authorization.authorizer import Authorizer
-from comment_tree.scopes.guest_scope import GuestScope
+from comment_tree.scopes.guest_scope import GuestScope, GuestService
 from comment_tree.scopes.user_scope import UserScope
 from comment_tree.service_provider.fastapi_helpers import provide
 
@@ -12,9 +11,9 @@ get_bearer_token = OAuth2PasswordBearer(tokenUrl=TOKEN_URL)
 
 
 def authorize_guest(
-    authorizer=provide(Authorizer),
+    guest_service=provide(GuestService),
 ) -> GuestScope:
-    return authorizer.create_guest_scope()
+    return guest_service.new_guest()
 
 
 def authorize_user(

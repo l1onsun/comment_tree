@@ -5,10 +5,12 @@ import sqlalchemy.ext.asyncio as sa
 from fastapi import FastAPI
 
 from comment_tree.api.root_router import root_router
-from comment_tree.authorization.authorizer import Authorizer
+from comment_tree.authorization.authorization_service import AuthorizationService
+from comment_tree.authorization.jwt_service import JwtService
 from comment_tree.env import Env
 from comment_tree.exceptions import add_exception_handler
 from comment_tree.postgres.storage import Storage
+from comment_tree.scopes.guest_scope import GuestService
 from comment_tree.service_provider.fastapi_helpers import app_set_service_provider
 from comment_tree.service_provider.service_factory import ServiceFactories
 from comment_tree.service_provider.service_provider import ServiceProvider
@@ -47,9 +49,21 @@ def build_storage(env: Env) -> Storage:
     )
 
 
-@factories.add(Authorizer)
-def build_authorizer(env: Env, storage: Storage) -> Authorizer:
-    return Authorizer(storage, env.jwt_secret_key)
+@factories.add(JwtService)
+def build_jwt_token_service(env: Env) -> JwtService:
+    return JwtService(env.jwt_secret_key)
+
+
+@factories.add(AuthorizationService)
+def build_authorizer(storage: Storage, jwt_service: JwtService) -> AuthorizationService:
+    return AuthorizationService(storage, jwt_service)
+
+
+@factories.add(GuestService)
+def build_guesthouse(
+    authorizer: AuthorizationService, storage: Storage
+) -> GuestService:
+    return GuestService(authorizer, storage)
 
 
 @factories.add(CreateTablesFlag)

@@ -1,25 +1,26 @@
 from dataclasses import dataclass
 
+from comment_tree.authorization.jwt_service import JwtService
 from comment_tree.postgres.storage import Storage
 
 
 @dataclass
 class UserScope:
     user_login: str
-    authorizer: "authorizer.Authorizer"  # type: ignore[name-defined]  # ToDo
+    jwt_token_service: JwtService
     storage: Storage
 
-    def post(self, post_id: int) -> "PostHandle":
+    def post_handle(self, post_id: int) -> "PostHandle":
         return PostHandle(self.user_login, post_id, self.storage)
 
-    def comment(self, comment_id: int) -> "CommentHandle":
+    def comment_handle(self, comment_id: int) -> "CommentHandle":
         return CommentHandle(self.user_login, comment_id, self.storage)
 
     async def new_post(self, content: str):
         await self.storage.insert_post(user_login=self.user_login, content=content)
 
     def create_jwt_access_token(self):
-        return self.authorizer.create_jwt_access_token(self.user_login)
+        return self.jwt_token_service.create_jwt_access_token(self.user_login)
 
 
 @dataclass

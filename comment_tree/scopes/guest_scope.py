@@ -1,23 +1,26 @@
 import re
 from dataclasses import dataclass, field
 
+from comment_tree.authorization.authorization_service import AuthorizationService
 from comment_tree.exceptions import BaseApiException
 from comment_tree.postgres.db_models import DbComment, DbPost
 from comment_tree.postgres.storage import Storage
 from comment_tree.response_models import CommentView, PostView
 from comment_tree.scopes.user_scope import UserScope
 
-allowed_login_pattern = re.compile(r"^\w+$")
 
+@dataclass
+class GuestService:
+    authorizer: AuthorizationService
+    storage: Storage
 
-def raise_exception_if_login_not_allowed(login: str):
-    if not allowed_login_pattern.match(login):
-        raise BaseApiException("Login must contain only letters digits and underscores")
+    def new_guest(self) -> "GuestScope":
+        return GuestScope(self.authorizer, self.storage)
 
 
 @dataclass
 class GuestScope:
-    authorizer: "authorizer.Authorizer"  # type: ignore[name-defined]  # ToDo
+    authorizer: AuthorizationService
     storage: Storage
 
     async def register_user(
@@ -34,27 +37,29 @@ class GuestScope:
         return self.authorizer.login_with_jwt_token(jwt_access_token)
 
     async def user_posts_by_login(self, user_login: str) -> list[PostView]:
-        posts = PostsHelper(await self.storage.select_user_posts(user_login))
+        posts = PostTreeBuilder(await self.storage.select_user_posts(user_login))
         return await self._load_and_attach_comments(posts)
 
     async def global_recent_posts(self) -> list[PostView]:
-        posts = PostsHelper(await self.storage.select_recent_posts())
+        posts = PostTreeBuilder(await self.storage.select_recent_posts())
         return await self._load_and_attach_comments(posts)
 
-    async def _load_and_attach_comments(self, posts: "PostsHelper") -> list[PostView]:
+    async def _load_and_attach_comments(
+        self, posts: "PostTreeBuilder"
+    ) -> list[PostView]:
         comments = await self._load_comments_under_posts(posts)
         return posts.attach_comments(comments)
 
     async def _load_comments_under_posts(
-        self, posts: "PostsHelper"
-    ) -> "CommentsHelper":
-        return CommentsHelper(
+        self, posts: "PostTreeBuilder"
+    ) -> "CommentTreeBuilder":
+        return CommentTreeBuilder(
             await self.storage.select_comments_by_post_ids(posts.ids())
         )
 
 
 @dataclass
-class CommentsHelper:
+class CommentTreeBuilder:
     db_comments: list[DbComment]
     comment_views: dict[int, CommentView] = field(init=False)
 
@@ -74,7 +79,7 @@ class CommentsHelper:
 
 
 @dataclass
-class PostsHelper:
+class PostTreeBuilder:
     db_posts: list[DbPost]
     post_views: dict[int, PostView] = field(init=False)
 
@@ -86,10 +91,18 @@ class PostsHelper:
     def ids(self) -> list[int]:
         return list(self.post_views.keys())
 
-    def attach_comments(self, comments: CommentsHelper) -> list[PostView]:
+    def attach_comments(self, comments: CommentTreeBuilder) -> list[PostView]:
         for comment in comments.db_comments:
             if comment.reply_to_comment_id is None:
                 self.post_views[comment.post_id].childs.append(
                     comments.comment_views[comment.id]
                 )
         return list(self.post_views.values())
+
+
+allowed_login_pattern = re.compile(r"^\w+$")
+
+
+def raise_exception_if_login_not_allowed(login: str):
+    if not allowed_login_pattern.match(login):
+        raise BaseApiException("Login must contain only letters digits and underscores")

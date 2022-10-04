@@ -6,7 +6,7 @@ from _pytest.mark import Mark
 from fastapi import FastAPI
 
 from comment_tree.asgi import create_app
-from comment_tree.authorization.authorizer import Authorizer
+from comment_tree.authorization.authorization_service import AuthorizationService
 from comment_tree.env import Env
 from comment_tree.postgres.storage import Storage
 from comment_tree.service_provider.fastapi_helpers import app_get_service_provider
@@ -53,5 +53,5 @@ def storage(service_provider: ServiceProvider) -> Storage:
 
 
 @pytest.fixture
-def authorizer(service_provider: ServiceProvider) -> Authorizer:
-    return service_provider.provide(Authorizer)
+def authorizer(service_provider: ServiceProvider) -> AuthorizationService:
+    return service_provider.provide(AuthorizationService)

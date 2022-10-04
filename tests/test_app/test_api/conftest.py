@@ -5,7 +5,7 @@ import httpx
 import pytest_asyncio
 from fastapi import FastAPI
 
-from comment_tree.authorization.authorizer import Authorizer
+from comment_tree.authorization.authorization_service import AuthorizationService
 from comment_tree.postgres.storage import Storage
 
 LOGGED_IN_USER_LOGIN = "logged_in_user"
@@ -25,7 +25,7 @@ AuthedUserFactoryType: TypeAlias = Callable[
 
 @pytest_asyncio.fixture
 async def authed_user_factory(
-    request, app: FastAPI, authorizer: Authorizer, storage: Storage
+    request, app: FastAPI, authorizer: AuthorizationService, storage: Storage
 ) -> AuthedUserFactoryType:
     @contextlib.asynccontextmanager
     async def factory(login: str, password: str = "password"):

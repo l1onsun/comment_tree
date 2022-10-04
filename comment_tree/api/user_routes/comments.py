@@ -21,7 +21,7 @@ async def new_comment(
     content: str = Body(embed=True, title="The content of new comment"),
     user: UserScope = Depends(authorize_user),
 ):
-    await user.post(post_id).new_comment(content, reply_to_comment_id)
+    await user.post_handle(post_id).new_comment(content, reply_to_comment_id)
     return Result.success()
 
 
@@ -31,7 +31,7 @@ async def edit_comment(
     new_content: str = Body(embed=True, title="New comment content"),
     user: UserScope = Depends(authorize_user),
 ):
-    await user.comment(comment_id).edit(new_content)
+    await user.comment_handle(comment_id).edit(new_content)
     return Result.success()
 
 
@@ -40,5 +40,5 @@ async def delete_comment(
     comment_id: int = Body(embed=True, title="The id of the comment to delete"),
     user: UserScope = Depends(authorize_user),
 ):
-    await user.comment(comment_id).delete()
+    await user.comment_handle(comment_id).delete()
     return Result.success()
