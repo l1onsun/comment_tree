@@ -4,11 +4,11 @@
 ## Using with docker
 ### Run all tests in docker-compose
 ```shell
-> make test-docker stop-test-postgres
+> make docker-test docker-stop-postgres
 ```
 ### Deploy in docker-compose
 ```shell
-> make run-docker
+> make docker-run
 ```
 
 ## Using locally

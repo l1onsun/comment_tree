@@ -4,7 +4,7 @@ services:
 
   app:
     restart: "no"
-    command: sh -c "alembic upgrade head && alembic revision --autogenerate -m '${REVISION_NAME:?err}'"
+    command: sh -c "${DOCKER_COMMAND:?err}"
     volumes:
       - ./alembic/:/code/alembic
       - ./alembic.ini/:/code/alembic.ini
