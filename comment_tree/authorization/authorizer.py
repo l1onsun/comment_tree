@@ -10,12 +10,18 @@ from comment_tree.scopes.guest_scope import GuestScope
 from comment_tree.scopes.user_scope import UserScope
 
 ALGORITHM = "HS256"
-TOKEN_EXPIRES_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 class AccessToken(BaseModel):
     user_login: str
     expires: float
+
+    @classmethod
+    def new(cls, user_login: str) -> "AccessToken":
+        return cls(
+            user_login=user_login,
+            expires=(datetime.utcnow() + timedelta(minutes=10)).timestamp(),
+        ).dict()
 
     def raise_exception_if_expired(self):
         if datetime.utcnow() > datetime.fromtimestamp(self.expires):
@@ -42,10 +48,7 @@ class Authorizer:
 
     def create_jwt_access_token(self, user_login: str):
         return jwt.encode(
-            AccessToken(
-                user_login=user_login,
-                expires=(datetime.utcnow() + timedelta(minutes=10)).timestamp(),
-            ).dict(),
+            AccessToken.new(user_login).dict(),
             self.jwt_secret_key,
             algorithm=ALGORITHM,
         )
