@@ -3,14 +3,12 @@ from collections import UserDict
 from dataclasses import dataclass
 from typing import Protocol, Type
 
+from comment_tree.service_provider.sync_or_async_chain import SyncOrAsyncChain
 from comment_tree.service_provider.types import BuilderFunc, Service, ServiceClass
 
 
 class _ServiceProvider(Protocol):
-    async def solve(self, service_class: Type[Service]) -> Service:
-        ...
-
-    async def solve_sync(self, service_class: Type[Service]) -> Service:
+    def solve_to_chain(self, service_class: Type[Service]) -> SyncOrAsyncChain[Service]:
         ...
 
 
@@ -25,50 +23,36 @@ class ServiceFactory:
     def from_builder_function(
         cls, service_class: ServiceClass, build_function: BuilderFunc
     ) -> "ServiceFactory":
-        builder_signature = _get_signature_if_annotated_else_raise(build_function)
         return cls(
             service_class=service_class,
-            dependencies=[
-                parameter.annotation
-                for parameter in builder_signature.parameters.values()
-            ],
+            dependencies=_get_annotations_or_raise(build_function),
             build_function=build_function,
             is_async=inspect.iscoroutinefunction(build_function),
         )
 
-    async def build_with_provider(self, service_provider: _ServiceProvider) -> Service:
-        solved_dependencies: list[Service] = [
-            await service_provider.solve(service_class)
-            for service_class in self.dependencies
-        ]
-        return await self.build_with_dependencies(solved_dependencies)
+    def build_to_chain(
+        self, service_provider: _ServiceProvider
+    ) -> SyncOrAsyncChain[Service]:
+        dependencies_chain = self.solve_dependencies_to_chain(service_provider)
+        return dependencies_chain.append_callable(
+            lambda result: self.build_function(*result),
+            callable_is_async=self.is_async,
+        )
 
-    def build_with_provider_sync(self, service_provider: _ServiceProvider) -> Service:
-        solved_dependencies: list[Service] = [
-            service_provider.solve_sync(service_class)
-            for service_class in self.dependencies
-        ]
-        return self.build_with_dependencies_sync(solved_dependencies)
-
-    async def build_with_dependencies(
-        self, solved_dependencies: list[Service]
-    ) -> Service:
-        result = self.build_function(*solved_dependencies)
-        return await result if self.is_async else result
-
-    def build_with_dependencies_sync(
-        self, solved_dependencies: list[Service]
-    ) -> Service:
-        if self.is_async:
-            raise RuntimeError(
-                f"Can't build async factory {self.build_function.__name__}"
-            )
-        return self.build_function(*solved_dependencies)
+    def solve_dependencies_to_chain(
+        self, service_provider: _ServiceProvider
+    ) -> SyncOrAsyncChain[list[Service]]:
+        return SyncOrAsyncChain.from_chain_list(
+            [
+                service_provider.solve_to_chain(service_class)
+                for service_class in self.dependencies
+            ]
+        )
 
 
-def _get_signature_if_annotated_else_raise(
+def _get_annotations_or_raise(
     build_function: BuilderFunc,
-) -> inspect.Signature:
+) -> list[ServiceClass]:
     builder_signature: inspect.Signature = inspect.signature(build_function)
     for parameter in builder_signature.parameters.values():
         if parameter.annotation is inspect.Signature.empty:
@@ -76,7 +60,7 @@ def _get_signature_if_annotated_else_raise(
                 f"{build_function.__name__} parameter {parameter}"
                 f" does not have annotation"
             )
-    return builder_signature
+    return [parameter.annotation for parameter in builder_signature.parameters.values()]
 
 
 class ServiceFactories(UserDict[ServiceClass, ServiceFactory]):

@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("content", sa.String(), nullable=False),
         sa.Column("timestamp", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(
-            ["user_login"],
+            ("user_login",),
             ["user.login"],
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -47,15 +47,15 @@ def upgrade() -> None:
         sa.Column("content", sa.String(), nullable=False),
         sa.Column("timestamp", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(
-            ["post_id"],
+            ("post_id",),
             ["post.id"],
         ),
         sa.ForeignKeyConstraint(
-            ["reply_to_comment_id"],
+            ("reply_to_comment_id",),
             ["comment.id"],
         ),
         sa.ForeignKeyConstraint(
-            ["user_login"],
+            ("user_login",),
             ["user.login"],
         ),
         sa.PrimaryKeyConstraint("id"),

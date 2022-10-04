@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Container, Type
 
 from comment_tree.service_provider.service_factory import ServiceFactories
+from comment_tree.service_provider.sync_or_async_chain import SyncOrAsyncChain
 from comment_tree.service_provider.types import Service, ServiceClass, TService
 
 _service_locked_sentinel = object()
@@ -21,27 +22,32 @@ class ServiceProvider:
         except KeyError:
             raise RuntimeError(f"Service {service_class} not found")
 
-    async def solve(self, service_class: Type[TService]) -> TService:
-        try:
-            service: Service = self._get_service(service_class)
-        except KeyError:
-            service = await self._build(service_class)
-        return service
+    async def solve_async(self, service_class: Type[TService]) -> TService:
+        return await self.solve_to_chain(service_class).async_resolve()
 
     def solve_sync(self, service_class: Type[TService]) -> TService:
-        # ToDo: fix DRY between sync and async functions
+        return self.solve_to_chain(service_class).sync_resolve()
+
+    async def solve_all_async(self):
+        for service_class in self.factories:
+            await self.solve_async(service_class)
+
+    def solve_all_sync(self):
+        for service_class in self.factories:
+            self.solve_sync(service_class)
+
+    def solve_to_chain(
+        self, service_class: Type[TService]
+    ) -> SyncOrAsyncChain[TService]:
         try:
             service: Service = self._get_service(service_class)
+            chain = SyncOrAsyncChain[TService](lambda: service, is_async=False)
         except KeyError:
-            service = self._build_sync(service_class)
-        return service
+            chain = self._build_to_chain(service_class)
+        return chain
 
     def solvable(self) -> Container[ServiceClass]:
         return self.factories.keys() | self.services.keys()
-
-    async def solve_all(self):
-        for service_class in self.factories:
-            await self.solve(service_class)
 
     def _get_service(self, service_class: Type[Service]) -> Service:
         service = self.services[service_class]
@@ -51,18 +57,20 @@ class ServiceProvider:
             )
         return service
 
-    async def _build(self, service_class: Type[Service]) -> Service:
-        self.services[service_class] = _service_locked_sentinel
-        service: Service = await (
-            self.factories.get_factory(service_class)
-        ).build_with_provider(self)
+    def _set_service(self, service_class: ServiceClass, service: Service) -> Service:
         self.services[service_class] = service
         return service
 
-    def _build_sync(self, service_class: Type[Service]) -> Service:
+    def _build_to_chain(
+        self, service_class: Type[Service]
+    ) -> SyncOrAsyncChain[Service]:
         self.services[service_class] = _service_locked_sentinel
-        service: Service = (
+        service_chain: SyncOrAsyncChain[Service] = (
             self.factories.get_factory(service_class)
-        ).build_with_provider_sync(self)
-        self.services[service_class] = service
-        return service
+            .build_to_chain(self)
+            .append_callable(
+                lambda service: self._set_service(service_class, service),
+                callable_is_async=False,
+            )
+        )
+        return service_chain

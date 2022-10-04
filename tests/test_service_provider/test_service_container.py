@@ -44,7 +44,7 @@ def build_some_service_c(a: ServiceA, b: ServiceB) -> ServiceC:
 @pytest.mark.asyncio
 async def test_provider_solve_all():
     provider = ServiceProvider(factories)
-    await provider.solve_all()
+    await provider.solve_all_async()
     assert provider.services.keys() == {
         ServiceProvider,
         ServiceA,

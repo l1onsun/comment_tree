@@ -5,6 +5,7 @@ import pytest_asyncio
 from _pytest.mark import Mark
 from fastapi import FastAPI
 
+from comment_tree.asgi import create_app
 from comment_tree.authorization.authorizer import Authorizer
 from comment_tree.env import Env
 from comment_tree.postgres.storage import Storage
@@ -35,7 +36,7 @@ def service_provider_before_startup(request, env):
 
 @pytest_asyncio.fixture
 async def app(service_provider_before_startup: ServiceProvider) -> FastAPI:
-    app = await service_provider_before_startup.solve(FastAPI)
+    app = create_app(service_provider_before_startup)
     await app.router.startup()
     yield app
     await app.router.shutdown()

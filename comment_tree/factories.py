@@ -26,7 +26,7 @@ def parse_env() -> Env:
 @factories.add(FastAPI)
 def build_fastapi(service_provider: ServiceProvider) -> FastAPI:
     async def on_startup():
-        await service_provider.solve_all()
+        await service_provider.solve_all_async()
 
     app = FastAPI(on_startup=[on_startup])
     app_set_service_provider(app, service_provider)
