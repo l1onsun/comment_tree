@@ -37,10 +37,10 @@ class PostHandle:
         )
 
     async def delete(self):
-        await self.storage.delete_post(self.post_id)
+        await self.storage.delete_post(self.post_id, self.user_login)
 
     async def edit(self, new_content: str):
-        await self.storage.update_post(self.post_id, new_content)
+        await self.storage.update_post(self.post_id, new_content, self.user_login)
 
 
 @dataclass
@@ -50,7 +50,7 @@ class CommentHandle:
     storage: Storage
 
     async def edit(self, new_content: str):
-        await self.storage.update_comment(self.comment_id, new_content)
+        await self.storage.update_comment(self.comment_id, new_content, self.user_login)
 
     async def delete(self):
-        await self.storage.delete_comment(self.comment_id)
+        await self.storage.delete_comment(self.comment_id, self.user_login)
